@@ -1,10 +1,14 @@
 from flask import Flask, render_template, url_for, flash, redirect
 from forms import RegistrationForm
 from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
+from flask_bcrypt import Bcrypt
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ede080d803e9f6d30ce3348400e0b49b'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 class User(db.Model):
   id = db.Column(db.Integer, primary_key=True)
@@ -31,7 +35,9 @@ def second_page():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit(): # checks if entries are valid
-        user = User(username=form.username.data, email=form.email.data, password=form.password.data)
+        pw_hash = bcrypt.generate_password_hash(form.password.data)
+        bcrypt.check_password_hash(pw_hash, form.password.data) # returns True
+        user = User(username=form.username.data, email=form.email.data, password=pw_hash)
         db.session.add(user)
         db.session.commit()
         flash(f'Account created for {form.username.data}!', 'success')
